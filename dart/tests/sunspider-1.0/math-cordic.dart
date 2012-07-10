@@ -25,76 +25,71 @@
 
 /////. Start CORDIC
 
-var AG_CONST = 0.6072529350;
+final num AG_CONST = 0.6072529350;
 
-function FIXED(X)
-{
-  return X * 65536.0;
-}
+num FIXED(num X) => X * 65536.0;
 
-function FLOAT(X)
-{
-  return X / 65536.0;
-}
+num FLOAT(num X) => X / 65536.0;
 
-function DEG2RAD(X)
-{
-  return 0.017453 * (X);
-}
+num DEG2RAD(num X) => 0.017453 * (X);
 
-var Angles = [
-  FIXED(45.0), FIXED(26.565), FIXED(14.0362), FIXED(7.12502),
-  FIXED(3.57633), FIXED(1.78991), FIXED(0.895174), FIXED(0.447614),
-  FIXED(0.223811), FIXED(0.111906), FIXED(0.055953),
-  FIXED(0.027977) 
-              ];
+List<num> Angles;
 
 var Target = 28.027;
 
-function cordicsincos(Target) {
-    var X;
-    var Y;
-    var TargetAngle;
-    var CurrAngle;
-    var Step;
- 
-    X = FIXED(AG_CONST);         /* AG_CONST * cos(0) */
-    Y = 0;                       /* AG_CONST * sin(0) */
+num cordicsincos(num _Target) {
+  num X;
+  num Y;
+  num TargetAngle;
+  num CurrAngle;
+  int Step;
+  
+  X = FIXED(AG_CONST);         /* AG_CONST * cos(0) */
+  Y = 0;                       /* AG_CONST * sin(0) */
 
-    TargetAngle = FIXED(Target);
-    CurrAngle = 0;
-    for (Step = 0; Step < 12; Step++) {
-        var NewX;
-        if (TargetAngle > CurrAngle) {
-            NewX = X - (Y >> Step);
-            Y = (X >> Step) + Y;
-            X = NewX;
-            CurrAngle += Angles[Step];
-        } else {
-            NewX = X + (Y >> Step);
-            Y = -(X >> Step) + Y;
-            X = NewX;
-            CurrAngle -= Angles[Step];
-        }
-    }
+  TargetAngle = FIXED(Target);
+  CurrAngle = 0;
+  for (Step = 0; Step < 12; Step++) {
+      num NewX;
+      if (TargetAngle > CurrAngle) {
+          NewX = X - (Y >> Step);
+          Y = (X >> Step) + Y;
+          X = NewX;
+          CurrAngle += Angles[Step];
+      } else {
+          NewX = X + (Y >> Step);
+          Y = -(X >> Step) + Y;
+          X = NewX;
+          CurrAngle -= Angles[Step];
+      }
+  }
 
-    return FLOAT(X) * FLOAT(Y);
+  return FLOAT(X) * FLOAT(Y);
 }
 
 ///// End CORDIC
 
-var total = 0;
-
-function cordic( runs ) {
-  var start = new Date();
-
-  for ( var i = 0 ; i < runs ; i++ ) {
-      total += cordicsincos(Target);
+num total = 0;
+  
+int cordic(num runs) {
+  var start = new Date.now();
+  
+  for (int i = 0 ; i < runs ; i++ ) {
+    total += cordicsincos(Target);
   }
 
-  var end = new Date();
+  var end = new Date.now();
 
-  return end.getTime() - start.getTime();
+  return start.difference(end).inMilliseconds;
 }
 
-cordic(25000);
+void main(){
+  Angles = [
+            FIXED(45.0), FIXED(26.565), FIXED(14.0362), FIXED(7.12502),
+            FIXED(3.57633), FIXED(1.78991), FIXED(0.895174), FIXED(0.447614),
+            FIXED(0.223811), FIXED(0.111906), FIXED(0.055953),
+            FIXED(0.027977)
+            ];
+
+  cordic(25000);
+}

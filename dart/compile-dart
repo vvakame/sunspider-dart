@@ -1,0 +1,10 @@
+#!/bin/sh -x
+
+for dir in tests/sun*; do
+  (cd $dir
+   for i in *.dart; do
+       dart2js -o$(basename $i dart)js $i
+   done)
+
+done
+

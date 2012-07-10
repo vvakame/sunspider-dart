@@ -1,0 +1,7 @@
+.project
+.children
+hosted
+tests/*/*.js
+tests/*/*.js.map
+*~
+
