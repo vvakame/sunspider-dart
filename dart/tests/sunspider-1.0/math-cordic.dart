@@ -39,7 +39,7 @@ var Target = 28.027;
 
 num cordicsincos(num _Target) {
   num X;
-  num Y;
+  int Y;
   num TargetAngle;
   num CurrAngle;
   int Step;
@@ -53,12 +53,12 @@ num cordicsincos(num _Target) {
       num NewX;
       if (TargetAngle > CurrAngle) {
           NewX = X - (Y >> Step);
-          Y = (X >> Step) + Y;
+          Y = (X.round().toInt() >> Step) + Y;
           X = NewX;
           CurrAngle += Angles[Step];
       } else {
           NewX = X + (Y >> Step);
-          Y = -(X >> Step) + Y;
+          Y = -(X.round().toInt() >> Step) + Y;
           X = NewX;
           CurrAngle -= Angles[Step];
       }
@@ -80,7 +80,7 @@ int cordic(num runs) {
 
   var end = new Date.now();
 
-  return start.difference(end).inMilliseconds;
+  return end.difference(start).inMilliseconds;
 }
 
 void main(){
