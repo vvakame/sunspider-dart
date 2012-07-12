@@ -19,17 +19,17 @@ var chrsz   = 8;  /* bits per input character. 8 - ASCII; 16 - Unicode      */
  * These are the functions you'll usually want to call
  * They take string arguments and return either hex or base-64 encoded strings
  */
-function hex_sha1(s){return binb2hex(core_sha1(str2binb(s),s.length * chrsz));}
-function b64_sha1(s){return binb2b64(core_sha1(str2binb(s),s.length * chrsz));}
-function str_sha1(s){return binb2str(core_sha1(str2binb(s),s.length * chrsz));}
-function hex_hmac_sha1(key, data){ return binb2hex(core_hmac_sha1(key, data));}
-function b64_hmac_sha1(key, data){ return binb2b64(core_hmac_sha1(key, data));}
-function str_hmac_sha1(key, data){ return binb2str(core_hmac_sha1(key, data));}
+String hex_sha1(String s){return binb2hex(core_sha1(str2binb(s),s.length * chrsz));}
+String b64_sha1(String s){return binb2b64(core_sha1(str2binb(s),s.length * chrsz));}
+String str_sha1(String s){return binb2str(core_sha1(str2binb(s),s.length * chrsz));}
+String hex_hmac_sha1(String key, String data){ return binb2hex(core_hmac_sha1(key, data));}
+String b64_hmac_sha1(String key, String data){ return binb2b64(core_hmac_sha1(key, data));}
+String str_hmac_sha1(String key, String data){ return binb2str(core_hmac_sha1(key, data));}
 
 /*
  * Perform a simple self-test to see if the VM is working
  */
-function sha1_vm_test()
+bool sha1_vm_test()
 {
   return hex_sha1("abc") == "a9993e364706816aba3e25717850c26c9cd0d89d";
 }
@@ -37,13 +37,13 @@ function sha1_vm_test()
 /*
  * Calculate the SHA-1 of an array of big-endian words, and a bit length
  */
-function core_sha1(x, len)
+List<num> core_sha1(List<num> x, num len)
 {
   /* append padding */
   x[len >> 5] |= 0x80 << (24 - len % 32);
   x[((len + 64 >> 9) << 4) + 15] = len;
 
-  var w = Array(80);
+  var w = new List(80);
   var a =  1732584193;
   var b = -271733879;
   var c = -1732584194;
@@ -77,7 +77,7 @@ function core_sha1(x, len)
     d = safe_add(d, oldd);
     e = safe_add(e, olde);
   }
-  return Array(a, b, c, d, e);
+  return [a, b, c, d, e];
 
 }
 
@@ -85,7 +85,7 @@ function core_sha1(x, len)
  * Perform the appropriate triplet combination function for the current
  * iteration
  */
-function sha1_ft(t, b, c, d)
+num sha1_ft(num t, num b, num c, num d)
 {
   if(t < 20) return (b & c) | ((~b) & d);
   if(t < 40) return b ^ c ^ d;
@@ -96,7 +96,7 @@ function sha1_ft(t, b, c, d)
 /*
  * Determine the appropriate additive constant for the current iteration
  */
-function sha1_kt(t)
+num sha1_kt(num t)
 {
   return (t < 20) ?  1518500249 : (t < 40) ?  1859775393 :
          (t < 60) ? -1894007588 : -899497514;
@@ -105,27 +105,29 @@ function sha1_kt(t)
 /*
  * Calculate the HMAC-SHA1 of a key and some data
  */
-function core_hmac_sha1(key, data)
+List<num> core_hmac_sha1(String key, String data)
 {
   var bkey = str2binb(key);
   if(bkey.length > 16) bkey = core_sha1(bkey, key.length * chrsz);
 
-  var ipad = Array(16), opad = Array(16);
+  var ipad = new List(16), opad = new List(16);
   for(var i = 0; i < 16; i++)
   {
     ipad[i] = bkey[i] ^ 0x36363636;
     opad[i] = bkey[i] ^ 0x5C5C5C5C;
   }
 
-  var hash = core_sha1(ipad.concat(str2binb(data)), 512 + data.length * chrsz);
-  return core_sha1(opad.concat(hash), 512 + 160);
+  ipad.addAll(str2binb(data));
+  var hash = core_sha1(ipad, 512 + data.length * chrsz);
+  opad.addAll(hash);
+  return core_sha1(opad, 512 + 160);
 }
 
 /*
  * Add integers, wrapping at 2^32. This uses 16-bit operations internally
  * to work around bugs in some JS interpreters.
  */
-function safe_add(x, y)
+num safe_add(num x, num y)
 {
   var lsw = (x & 0xFFFF) + (y & 0xFFFF);
   var msw = (x >> 16) + (y >> 16) + (lsw >> 16);
@@ -135,47 +137,46 @@ function safe_add(x, y)
 /*
  * Bitwise rotate a 32-bit number to the left.
  */
-function rol(num, cnt)
+num rol(num _num, num cnt)
 {
-  return (num << cnt) | (num >>> (32 - cnt));
+  return (_num << cnt) | (_num >> (32 - cnt));
 }
 
 /*
  * Convert an 8-bit or 16-bit string to an array of big-endian words
  * In 8-bit function, characters >255 have their hi-byte silently ignored.
  */
-function str2binb(str)
+List<num> str2binb(String str)
 {
-  var bin = Array();
+  var bin = [];
   var mask = (1 << chrsz) - 1;
   for(var i = 0; i < str.length * chrsz; i += chrsz)
-    bin[i>>5] |= (str.charCodeAt(i / chrsz) & mask) << (32 - chrsz - i%32);
+    bin[i>>5] |= (str.charCodeAt((i / chrsz).toInt()) & mask) << (32 - chrsz - i%32);
   return bin;
 }
 
 /*
  * Convert an array of big-endian words to a string
  */
-function binb2str(bin)
+String binb2str(List<num> bin)
 {
   var str = "";
   var mask = (1 << chrsz) - 1;
   for(var i = 0; i < bin.length * 32; i += chrsz)
-    str += String.fromCharCode((bin[i>>5] >>> (32 - chrsz - i%32)) & mask);
+    str = "${str}${new String.fromCharCodes([(bin[i>>5] >> (32 - chrsz - i%32)) & mask])}";
   return str;
 }
 
 /*
  * Convert an array of big-endian words to a hex string.
  */
-function binb2hex(binarray)
+String binb2hex(List<num> binarray)
 {
   var hex_tab = hexcase ? "0123456789ABCDEF" : "0123456789abcdef";
   var str = "";
   for(var i = 0; i < binarray.length * 4; i++)
   {
-    str += hex_tab.charAt((binarray[i>>2] >> ((3 - i%4)*8+4)) & 0xF) +
-           hex_tab.charAt((binarray[i>>2] >> ((3 - i%4)*8  )) & 0xF);
+    str = "${str}${hex_tab[(binarray[i>>2] >> ((3 - i%4)*8+4)) & 0xF]}${hex_tab[(binarray[i>>2] >> ((3 - i%4)*8  )) & 0xF]}";
   }
   return str;
 }
@@ -183,7 +184,7 @@ function binb2hex(binarray)
 /*
  * Convert an array of big-endian words to a base-64 string
  */
-function binb2b64(binarray)
+String binb2b64(List<num> binarray)
 {
   var tab = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
   var str = "";
@@ -194,31 +195,33 @@ function binb2b64(binarray)
                 |  ((binarray[i+2 >> 2] >> 8 * (3 - (i+2)%4)) & 0xFF);
     for(var j = 0; j < 4; j++)
     {
-      if(i * 8 + j * 6 > binarray.length * 32) str += b64pad;
-      else str += tab.charAt((triplet >> 6*(3-j)) & 0x3F);
+      if(i * 8 + j * 6 > binarray.length * 32) str = "${str}${b64pad}";
+      else str = "${str}${tab[(triplet >> 6*(3-j)) & 0x3F]}";
     }
   }
   return str;
 }
 
 
-var plainText = "Two households, both alike in dignity,\n\
-In fair Verona, where we lay our scene,\n\
-From ancient grudge break to new mutiny,\n\
-Where civil blood makes civil hands unclean.\n\
-From forth the fatal loins of these two foes\n\
-A pair of star-cross'd lovers take their life;\n\
-Whole misadventured piteous overthrows\n\
-Do with their death bury their parents' strife.\n\
-The fearful passage of their death-mark'd love,\n\
-And the continuance of their parents' rage,\n\
-Which, but their children's end, nought could remove,\n\
-Is now the two hours' traffic of our stage;\n\
-The which if you with patient ears attend,\n\
-What here shall miss, our toil shall strive to mend.";
+var plainText = """Two households, both alike in dignity,
+In fair Verona, where we lay our scene,
+From ancient grudge break to new mutiny,
+Where civil blood makes civil hands unclean.
+From forth the fatal loins of these two foes
+A pair of star-cross'd lovers take their life;
+Whole misadventured piteous overthrows
+Do with their death bury their parents' strife.
+The fearful passage of their death-mark'd love,
+And the continuance of their parents' rage,
+Which, but their children's end, nought could remove,
+Is now the two hours' traffic of our stage;
+The which if you with patient ears attend,
+What here shall miss, our toil shall strive to mend.""";
 
-for (var i = 0; i <4; i++) {
-    plainText += plainText;
+void main() {
+  for (var i = 0; i <4; i++) {
+      plainText = "${plainText}${plainText}";
+  }
+  
+  var sha1Output = hex_sha1(plainText);
 }
-
-var sha1Output = hex_sha1(plainText);
