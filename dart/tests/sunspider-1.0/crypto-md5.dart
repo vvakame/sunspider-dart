@@ -19,17 +19,17 @@ var chrsz   = 8;  /* bits per input character. 8 - ASCII; 16 - Unicode      */
  * These are the functions you'll usually want to call
  * They take string arguments and return either hex or base-64 encoded strings
  */
-function hex_md5(s){ return binl2hex(core_md5(str2binl(s), s.length * chrsz));}
-function b64_md5(s){ return binl2b64(core_md5(str2binl(s), s.length * chrsz));}
-function str_md5(s){ return binl2str(core_md5(str2binl(s), s.length * chrsz));}
-function hex_hmac_md5(key, data) { return binl2hex(core_hmac_md5(key, data)); }
-function b64_hmac_md5(key, data) { return binl2b64(core_hmac_md5(key, data)); }
-function str_hmac_md5(key, data) { return binl2str(core_hmac_md5(key, data)); }
+String hex_md5(String s){ return binl2hex(core_md5(str2binl(s), s.length * chrsz));}
+String b64_md5(String s){ return binl2b64(core_md5(str2binl(s), s.length * chrsz));}
+String str_md5(String s){ return binl2str(core_md5(str2binl(s), s.length * chrsz));}
+String hex_hmac_md5(String key, String data) { return binl2hex(core_hmac_md5(key, data)); }
+String b64_hmac_md5(String key, String data) { return binl2b64(core_hmac_md5(key, data)); }
+String str_hmac_md5(String key, String data) { return binl2str(core_hmac_md5(key, data)); }
 
 /*
  * Perform a simple self-test to see if the VM is working
  */
-function md5_vm_test()
+bool md5_vm_test()
 {
   return hex_md5("abc") == "900150983cd24fb0d6963f7d28e17f72";
 }
@@ -37,11 +37,11 @@ function md5_vm_test()
 /*
  * Calculate the MD5 of an array of little-endian words, and a bit length
  */
-function core_md5(x, len)
+List<num> core_md5(x, len)
 {
   /* append padding */
   x[len >> 5] |= 0x80 << ((len) % 32);
-  x[(((len + 64) >>> 9) << 4) + 14] = len;
+  x[(((len + 64) >> 9) << 4) + 14] = len;
 
   var a =  1732584193;
   var b = -271733879;
@@ -128,30 +128,30 @@ function core_md5(x, len)
     c = safe_add(c, oldc);
     d = safe_add(d, oldd);
   }
-  return Array(a, b, c, d);
+  return [a, b, c, d];
 
 }
 
 /*
  * These functions implement the four basic operations the algorithm uses.
  */
-function md5_cmn(q, a, b, x, s, t)
+num md5_cmn(q, a, b, x, s, t)
 {
   return safe_add(bit_rol(safe_add(safe_add(a, q), safe_add(x, t)), s),b);
 }
-function md5_ff(a, b, c, d, x, s, t)
+num md5_ff(a, b, c, d, x, s, t)
 {
   return md5_cmn((b & c) | ((~b) & d), a, b, x, s, t);
 }
-function md5_gg(a, b, c, d, x, s, t)
+num md5_gg(a, b, c, d, x, s, t)
 {
   return md5_cmn((b & d) | (c & (~d)), a, b, x, s, t);
 }
-function md5_hh(a, b, c, d, x, s, t)
+num md5_hh(a, b, c, d, x, s, t)
 {
   return md5_cmn(b ^ c ^ d, a, b, x, s, t);
 }
-function md5_ii(a, b, c, d, x, s, t)
+num md5_ii(a, b, c, d, x, s, t)
 {
   return md5_cmn(c ^ (b | (~d)), a, b, x, s, t);
 }
@@ -159,27 +159,29 @@ function md5_ii(a, b, c, d, x, s, t)
 /*
  * Calculate the HMAC-MD5, of a key and some data
  */
-function core_hmac_md5(key, data)
+List<num> core_hmac_md5(key, data)
 {
   var bkey = str2binl(key);
   if(bkey.length > 16) bkey = core_md5(bkey, key.length * chrsz);
 
-  var ipad = Array(16), opad = Array(16);
+  var ipad = new List(16), opad = new List(16);
   for(var i = 0; i < 16; i++)
   {
     ipad[i] = bkey[i] ^ 0x36363636;
     opad[i] = bkey[i] ^ 0x5C5C5C5C;
   }
 
-  var hash = core_md5(ipad.concat(str2binl(data)), 512 + data.length * chrsz);
-  return core_md5(opad.concat(hash), 512 + 128);
+  ipad.addAll(str2binl(data));
+  var hash = core_md5(ipad, 512 + data.length * chrsz);
+  opad.addAll(hash);
+  return core_md5(opad, 512 + 128);
 }
 
 /*
  * Add integers, wrapping at 2^32. This uses 16-bit operations internally
  * to work around bugs in some JS interpreters.
  */
-function safe_add(x, y)
+num safe_add(num x, num y)
 {
   var lsw = (x & 0xFFFF) + (y & 0xFFFF);
   var msw = (x >> 16) + (y >> 16) + (lsw >> 16);
@@ -189,47 +191,46 @@ function safe_add(x, y)
 /*
  * Bitwise rotate a 32-bit number to the left.
  */
-function bit_rol(num, cnt)
+num  bit_rol(num _num, num cnt)
 {
-  return (num << cnt) | (num >>> (32 - cnt));
+  return (_num << cnt) | (_num >> (32 - cnt));
 }
 
 /*
  * Convert a string to an array of little-endian words
  * If chrsz is ASCII, characters >255 have their hi-byte silently ignored.
  */
-function str2binl(str)
+List<num> str2binl(String str)
 {
-  var bin = Array();
+  var bin = [];
   var mask = (1 << chrsz) - 1;
   for(var i = 0; i < str.length * chrsz; i += chrsz)
-    bin[i>>5] |= (str.charCodeAt(i / chrsz) & mask) << (i%32);
+    bin[i>>5] |= (str.charCodeAt((i / chrsz).toInt()) & mask) << (i%32);
   return bin;
 }
 
 /*
  * Convert an array of little-endian words to a string
  */
-function binl2str(bin)
+String binl2str(List<num> bin)
 {
   var str = "";
   var mask = (1 << chrsz) - 1;
   for(var i = 0; i < bin.length * 32; i += chrsz)
-    str += String.fromCharCode((bin[i>>5] >>> (i % 32)) & mask);
+    str = "${str}${new String.fromCharCodes([(bin[i>>5] >> (i % 32)) & mask])}";
   return str;
 }
 
 /*
  * Convert an array of little-endian words to a hex string.
  */
-function binl2hex(binarray)
+String binl2hex(List<num> binarray)
 {
   var hex_tab = hexcase ? "0123456789ABCDEF" : "0123456789abcdef";
   var str = "";
   for(var i = 0; i < binarray.length * 4; i++)
   {
-    str += hex_tab.charAt((binarray[i>>2] >> ((i%4)*8+4)) & 0xF) +
-           hex_tab.charAt((binarray[i>>2] >> ((i%4)*8  )) & 0xF);
+    str = "${str}${hex_tab[(binarray[i>>2] >> ((i%4)*8+4)) & 0xF]}${hex_tab[(binarray[i>>2] >> ((i%4)*8  )) & 0xF]}";
   }
   return str;
 }
@@ -237,7 +238,7 @@ function binl2hex(binarray)
 /*
  * Convert an array of little-endian words to a base-64 string
  */
-function binl2b64(binarray)
+String binl2b64(binarray)
 {
   var tab = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
   var str = "";
@@ -248,39 +249,41 @@ function binl2b64(binarray)
                 |  ((binarray[i+2 >> 2] >> 8 * ((i+2)%4)) & 0xFF);
     for(var j = 0; j < 4; j++)
     {
-      if(i * 8 + j * 6 > binarray.length * 32) str += b64pad;
-      else str += tab.charAt((triplet >> 6*(3-j)) & 0x3F);
+      if(i * 8 + j * 6 > binarray.length * 32) str = "${str}${b64pad}";
+      else str = "${str}${tab[(triplet >> 6*(3-j)) & 0x3F]}";
     }
   }
   return str;
 }
 
-var plainText = "Rebellious subjects, enemies to peace,\n\
-Profaners of this neighbour-stained steel,--\n\
-Will they not hear? What, ho! you men, you beasts,\n\
-That quench the fire of your pernicious rage\n\
-With purple fountains issuing from your veins,\n\
-On pain of torture, from those bloody hands\n\
-Throw your mistemper'd weapons to the ground,\n\
-And hear the sentence of your moved prince.\n\
-Three civil brawls, bred of an airy word,\n\
-By thee, old Capulet, and Montague,\n\
-Have thrice disturb'd the quiet of our streets,\n\
-And made Verona's ancient citizens\n\
-Cast by their grave beseeming ornaments,\n\
-To wield old partisans, in hands as old,\n\
-Canker'd with peace, to part your canker'd hate:\n\
-If ever you disturb our streets again,\n\
-Your lives shall pay the forfeit of the peace.\n\
-For this time, all the rest depart away:\n\
-You Capulet; shall go along with me:\n\
-And, Montague, come you this afternoon,\n\
-To know our further pleasure in this case,\n\
-To old Free-town, our common judgment-place.\n\
-Once more, on pain of death, all men depart."
+var plainText = """Rebellious subjects, enemies to peace,
+Profaners of this neighbour-stained steel,--
+Will they not hear? What, ho! you men, you beasts,
+That quench the fire of your pernicious rage
+With purple fountains issuing from your veins,
+On pain of torture, from those bloody hands
+Throw your mistemper'd weapons to the ground,
+And hear the sentence of your moved prince.
+Three civil brawls, bred of an airy word,
+By thee, old Capulet, and Montague,
+Have thrice disturb'd the quiet of our streets,
+And made Verona's ancient citizens
+Cast by their grave beseeming ornaments,
+To wield old partisans, in hands as old,
+Canker'd with peace, to part your canker'd hate:
+If ever you disturb our streets again,
+Your lives shall pay the forfeit of the peace.
+For this time, all the rest depart away:
+You Capulet; shall go along with me:
+And, Montague, come you this afternoon,
+To know our further pleasure in this case,
+To old Free-town, our common judgment-place.
+Once more, on pain of death, all men depart.""";
 
-for (var i = 0; i <4; i++) {
-    plainText += plainText;
+void main() {
+  for (var i = 0; i <4; i++) {
+      plainText = "${plainText}${plainText}";
+  }
+  
+  var md5Output = hex_md5(plainText);
 }
-
-var md5Output = hex_md5(plainText);
